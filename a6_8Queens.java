@@ -1,154 +1,58 @@
-import java.util.*;
-
+// SimpleEightQueens.java
 public class a6_8Queens {
 
-    // Goal state
-    static int[][] goal = {
-        {1, 2, 3},
-        {4, 5, 6},
-        {7, 8, 0}
-    };
+    static final int N = 8;
+    static int[] board = new int[N]; 
+    static int solutionCount = 0;
 
-    // Convert matrix to string (for easy comparison and storing in visited)
-    static String stateToString(int[][] state) {
-        String s = "";
-        for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 3; j++)
-                s += state[i][j];
-        return s;
-    }
-
-    // Copy state (to avoid modifying original)
-    static int[][] copy(int[][] state) {
-        int[][] newState = new int[3][3];
-        for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 3; j++)
-                newState[i][j] = state[i][j];
-        return newState;
-    }
-
-    // Find blank (0) position
-    static int[] findZero(int[][] state) {
-        for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 3; j++)
-                if (state[i][j] == 0) return new int[]{i, j};
-        return null;
-    }
-
-    // Generate next possible moves
-    static List<int[][]> generateMoves(int[][] state) {
-        List<int[][]> moves = new ArrayList<>();
-        int[] zero = findZero(state);
-        int x = zero[0], y = zero[1];
-
-        // 4 directions
-        int[][] dirs = {{-1,0},{1,0},{0,-1},{0,1}};
-        for (int[] d : dirs) {
-            int nx = x + d[0], ny = y + d[1];
-            if (nx >= 0 && nx < 3 && ny >= 0 && ny < 3) {
-                int[][] newState = copy(state);
-                // swap blank with neighbor
-                newState[x][y] = newState[nx][ny];
-                newState[nx][ny] = 0;
-                moves.add(newState);
+    // Check if placing a queen at (row, col) is safe
+    static boolean isSafe(int col, int row) {
+        for (int c = 0; c < col; c++) {
+            int r = board[c];
+            // Same row OR same diagonal
+            if (r == row || Math.abs(r - row) == Math.abs(c - col)) {
+                return false;
             }
         }
-        return moves;
+        return true;
     }
 
-    // BFS
-    static void bfs(int[][] start) {
-        Queue<int[][]> q = new LinkedList<>();
-        Set<String> visited = new HashSet<>();
-        Map<String, String> parent = new HashMap<>();
+    // Backtracking function to place queens column by column
+    static void solve(int col) {
+        // All queens placed
+        if (col == N) {
+            solutionCount++;
+            printBoard();
+            System.out.println();
+            return;
+        }
 
-        q.add(start);
-        visited.add(stateToString(start));
-        parent.put(stateToString(start), null);
-
-        while (!q.isEmpty()) {
-            int[][] state = q.poll();
-            if (stateToString(state).equals(stateToString(goal))) {
-                printPath(state, parent);
-                return;
+        // Try placing queen at each row in this column
+        for (int row = 0; row < N; row++) {
+            if (isSafe(col, row)) {
+                board[col] = row;   // place queen
+                solve(col + 1);     // recurse for next column
+                // (No need to "undo" explicitly because board[col] will be overwritten in the next try)
             }
-            for (int[][] next : generateMoves(state)) {
-                String key = stateToString(next);
-                if (!visited.contains(key)) {
-                    visited.add(key);
-                    parent.put(key, stateToString(state));
-                    q.add(next);
+        }
+    }
+
+    // Print the chessboard
+    static void printBoard() {
+        for (int r = 0; r < N; r++) {
+            for (int c = 0; c < N; c++) {
+                if (board[c] == r) {
+                    System.out.print("Q ");
+                } else {
+                    System.out.print("- ");
                 }
             }
-        }
-        System.out.println("No solution.");
-    }
-
-    // DFS with depth limit
-    static void dfs(int[][] start, int limit) {
-        Stack<int[][]> stack = new Stack<>();
-        Set<String> visited = new HashSet<>();
-        Map<String, String> parent = new HashMap<>();
-        Map<String, Integer> depth = new HashMap<>();
-
-        stack.push(start);
-        visited.add(stateToString(start));
-        parent.put(stateToString(start), null);
-        depth.put(stateToString(start), 0);
-
-        while (!stack.isEmpty()) {
-            int[][] state = stack.pop();
-            if (stateToString(state).equals(stateToString(goal))) {
-                printPath(state, parent);
-                return;
-            }
-            if (depth.get(stateToString(state)) >= limit) continue;
-
-            for (int[][] next : generateMoves(state)) {
-                String key = stateToString(next);
-                if (!visited.contains(key)) {
-                    visited.add(key);
-                    parent.put(key, stateToString(state));
-                    depth.put(key, depth.get(stateToString(state)) + 1);
-                    stack.push(next);
-                }
-            }
-        }
-        System.out.println("No solution within depth " + limit);
-    }
-
-    // Print path using parent map
-    static void printPath(int[][] end, Map<String, String> parent) {
-        List<String> path = new ArrayList<>();
-        String key = stateToString(end);
-        while (key != null) {
-            path.add(key);
-            key = parent.get(key);
-        }
-        Collections.reverse(path);
-
-        int step = 0;
-        for (String s : path) {
-            System.out.println("\nStep " + step++);
-            for (int i = 0; i < 9; i++) {
-                System.out.print(s.charAt(i) + " ");
-                if ((i+1)%3==0) System.out.println();
-            }
+            System.out.println();
         }
     }
 
-    // Main
     public static void main(String[] args) {
-        int[][] start = {
-            {1, 2, 3},
-            {4, 0, 6},
-            {7, 5, 8}
-        };
-
-        System.out.println("BFS Solution:");
-        bfs(start);
-
-        System.out.println("\nDFS Solution:");
-        dfs(start, 20);
+        solve(0);
+        System.out.println("Total solutions: " + solutionCount);
     }
 }
